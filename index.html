@@ -100,7 +100,8 @@
             font-size: 14px;
             font-style: italic;
             border-bottom: 1px solid rgba(121, 82, 179, 0.15);
-            background-size: cover;background-position: center;
+            background-size: cover;
+            background-position: center;
         }
 
         .product-info {
@@ -140,6 +141,24 @@
         .hidden { display: none !important; }
         .admin-badge { background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; display: inline-block; margin-bottom: 15px; }
         footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+        /* Кастомный стиль для загрузчика файлов */
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-upload-input {
+            width: 100%;
+            padding: 12px;
+            background-color: #120e22;
+            border: 1px solid rgba(121, 82, 179, 0.5);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -167,7 +186,7 @@
             <button class="btn" onclick="handleAuth()">Продолжить</button>
         </div>
 
-        <!-- Пароль для мамы (Ксении) -->
+        <!-- Пароль для мамы (Ксюша / Админ) -->
         <div id="password-block" class="card hidden">
             <span class="admin-badge">Режим Administrator</span>
             <h2>Подтверждение доступа</h2>
@@ -186,7 +205,7 @@
 
         <!-- Админка мамы -->
         <div id="admin-block" class="card hidden">
-            <span class="admin-badge">Панель Ксении</span>
+            <span class="admin-badge">Панель Ксюши</span>
             <h2>Управление услугами в реальном времени</h2>
             
             <div class="form-group">
@@ -197,11 +216,18 @@
                 <label for="new-price">Цена (руб.):</label>
                 <input type="number" id="new-price" placeholder="Например: 1500">
             </div>
-            <div class="form-group"><label for="new-img">Ссылка на картинку / фото карты:</label>
-                <input type="text" id="new-img" placeholder="URL картинки или оставьте пустым">
+            <div class="form-group">
+                <label>Фото карты/товара (выберите с телефона или ПК):</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="new-img" accept="image/*" class="file-upload-input">
+                </div>
+                <div id="image-preview" style="margin-top: 15px; text-align: center; display: none;">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Предпросмотр фото:</p>
+                    <img id="preview-img" src="" style="max-height: 150px; border-radius: 8px; border: 1px solid var(--accent-gold);">
+                </div>
             </div>
 
-            <button class="btn" onclick="addNewService()" style="background-color: #28a745; color: white; margin-bottom: 15px;">Добавить на сайт</button>
+            <button class="btn" id="submit-btn" onclick="addNewService()" style="background-color: #28a745; color: white; margin-bottom: 15px;">Добавить на сайт</button>
             <button class="btn" onclick="exitAdmin()" style="background-color: #6c757d; color: white;">Выйти в режим пользователя</button>
 
             <h3 style="color: var(--accent-gold); margin-top: 30px; font-size: 18px;">Текущие товары в базе (режим удаления):</h3>
@@ -237,6 +263,21 @@
         let currentUserName = "";
         let currentUserPhone = "";
 
+        // Показ предпросмотра выбранной картинки
+        document.getElementById('new-img').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('preview-img').src = event.target.result;
+                    document.getElementById('image-preview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('image-preview').style.display = 'none';
+            }
+        });
+
         // Автоматическое обновление данных
         db.collection("services").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
             services = [];
@@ -258,7 +299,9 @@
             if (!nameInput) { alert("Пожалуйста, введите имя!"); return; }
             currentUserName = nameInput;
 
-            if (currentUserName.toLowerCase() === "ксения") {
+            const lowerName = currentUserName.toLowerCase();
+            // Поддержка имен: Ксюша, Админ, админ
+            if (lowerName === "ксюша" || lowerName === "админ") {
                 document.getElementById('auth-block').classList.add('hidden');
                 document.getElementById('password-block').classList.remove('hidden');
             } else {
@@ -272,7 +315,8 @@
         }
 
         function checkPassword() {
-            if (document.getElementById('admin-password').value === "123") {
+            // Новый пароль: 270385
+            if (document.getElementById('admin-password').value === "270385") {
                 document.getElementById('password-block').classList.add('hidden');
                 document.getElementById('admin-block').classList.remove('hidden');
                 showAlert("Доступ разрешен!");
@@ -283,7 +327,8 @@
         function exitAdmin() {
             document.getElementById('admin-block').classList.add('hidden');
             document.getElementById('user-block').classList.remove('hidden');
-            renderUserServices();showInfo("Режим пользователя");
+            renderUserServices();
+            showInfo("Режим пользователя");
         }
 
         // РЕНДЕР КАРТОЧЕК ДЛЯ КЛИЕНТА
@@ -348,29 +393,96 @@
             });
         }
 
+        // ДОБАВЛЕНИЕ НОВОЙ УСЛУГИ С ОПТИМИЗАЦИЕЙ ФОТОГРАФИИ
         function addNewService() {
             const title = document.getElementById('new-title').value.trim();
             const price = parseInt(document.getElementById('new-price').value);
-            const img = document.getElementById('new-img').value.trim();
-            if (!title || !price) { alert("Заполните поля!"); return; }
+            const fileInput = document.getElementById('new-img');
+            
+            if (!title || !price) { alert("Заполните поля Название и Цена!"); return; }
 
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Загрузка и оптимизация фото...";
+
+            const file = fileInput.files[0];
+
+            if (file) {
+                // Если файл выбран, сжимаем его и переводим в Base64
+                resizeAndConvertToBase64(file, function(base64Data) {
+                    saveToFirestore(title, price, base64Data);
+                });
+            } else {
+                // Если файл не выбран, сохраняем товар без фото
+                saveToFirestore(title, price, "");
+            }
+        }
+
+        // Сохранение в Firebase Firestore
+        function saveToFirestore(title, price, imgBase64) {
+            const submitBtn = document.getElementById('submit-btn');
             db.collection("services").add({
                 id: Date.now(),
                 title: title,
                 price: price,
-                img: img,
+                img: imgBase64,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 document.getElementById('new-title').value = "";
                 document.getElementById('new-price').value = "";
                 document.getElementById('new-img').value = "";
+                document.getElementById('image-preview').style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Добавить на сайт";
                 showAlert(`Успешно добавлено в базу данных!`);
-            }).catch(err => alert("Ошибка добавления в базу данных: " + err));
+            }).catch(err => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Добавить на сайт";
+                alert("Ошибка добавления в базу данных: " + err);
+            });
+        }
+
+        // Функция сжатия изображения с помощью Canvas
+        function resizeAndConvertToBase64(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 500; // Оптимальный размер для мобильных экранов
+                    
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Сжимаем в формат JPEG с качеством 70% для минимального веса файла
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    callback(dataUrl);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
         function deleteService(docId) {
             if(confirm("Удалить услугу из базы данных навсегда?")) {
-                db.collection("services").doc(docId).delete().then(() => showAlert("Удалено!"))
+                db.collection("services").doc(docId).delete()
+                    .then(() => showAlert("Удалено!"))
                     .catch(err => alert("Ошибка удаления: " + err));
             }
         }
@@ -404,3 +516,8 @@
     </script>
 </body>
 </html>
+```eof
+
+Все изменения успешно внесены! 
+
+Попробуй загрузить файл на GitHub, открой сайт, войди как **`Ксюша`** с паролем **`270385`** и протестируй добавление картинок со своего устройства. Всё должно работать на ура!
