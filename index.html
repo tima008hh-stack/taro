@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель управления и Таро Консультации</title>
+    
+    <!-- Подключаем стили и скрипты для фоторедактора (Cropper.js) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    
     <!-- Библиотека EmailJS -->
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
-    <!-- Подключаем Firebase SDK для автоматической базы данных -->
+    <!-- Подключаем Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
@@ -54,13 +59,13 @@
         .form-group { margin-bottom: 20px; }
         label { display: block; color: var(--text-muted); margin-bottom: 8px; font-size: 14px; }
 
-        input[type="text"], input[type="password"], input[type="number"] {
+        input[type="text"], input[type="password"], input[type="number"], select {
             width: 100%; padding: 12px; background-color: #120e22;
             border: 1px solid rgba(121, 82, 179, 0.5); border-radius: 8px;
             color: #fff; font-family: inherit; font-size: 15px;
         }
 
-        input:focus { outline: none; border-color: var(--accent-gold); }
+        input:focus, select:focus { outline: none; border-color: var(--accent-gold); }
 
         .btn {
             display: inline-block; width: 100%; background-color: var(--accent-gold);
@@ -70,7 +75,6 @@
         }
         .btn:hover { background-color: #f3c66f; }
 
-        /* Сетка для карточек товаров */
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -78,7 +82,6 @@
             margin-top: 20px;
         }
 
-        /* Стиль самой карточки товара */
         .product-card {
             background: rgba(23, 18, 38, 0.6);
             border: 1px solid rgba(121, 82, 179, 0.25);
@@ -91,7 +94,7 @@
 
         .product-img-block {
             width: 100%;
-            height: 200px;
+            height: 240px;
             background-color: #19142d;
             display: flex;
             align-items: center;
@@ -112,27 +115,10 @@
             justify-content: space-between;
         }
 
-        .product-title {
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            line-height: 1.4;
-        }
+        .product-title { color: #fff; font-size: 18px; font-weight: bold; margin: 0 0 10px 0; line-height: 1.4; }
+        .product-price { color: var(--accent-gold); font-size: 20px; font-weight: bold; margin-bottom: 15px; }
 
-        .product-price {
-            color: var(--accent-gold);
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .product-btn {
-            padding: 10px;
-            font-size: 14px;
-            background-color: var(--accent-purple);
-            color: #fff;
-        }
+        .product-btn { padding: 10px; font-size: 14px; background-color: var(--accent-purple); color: #fff; }
         .product-btn:hover { background-color: #8c62c7; }
 
         .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: none; }
@@ -142,22 +128,24 @@
         .admin-badge { background-color: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; display: inline-block; margin-bottom: 15px; }
         footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
 
-        /* Кастомный стиль для загрузчика файлов */
-        .file-upload-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            width: 100%;
+        /* Стили фоторедактора */
+        .editor-wrapper {
+            background: #120e22;
+            border: 1px dashed var(--accent-gold);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            text-align: center;
         }
-        .file-upload-input {
-            width: 100%;
-            padding: 12px;
-            background-color: #120e22;
-            border: 1px solid rgba(121, 82, 179, 0.5);
+        .cropper-box-container {
+            max-height: 400px;
+            margin-bottom: 15px;
+            overflow: hidden;
             border-radius: 8px;
-            color: #fff;
-            font-family: inherit;
-            cursor: pointer;
+        }
+        .cropper-box-container img {
+            max-width: 100%;
+            display: block;
         }
     </style>
 </head>
@@ -177,7 +165,7 @@
             <h2>Регистрация пользователя</h2>
             <div class="form-group">
                 <label for="username">Введите ваше имя:</label>
-                <input type="text" id="username" placeholder="Например, Иван или Ксения">
+                <input type="text" id="username" placeholder="Например, Иван или Ксюша">
             </div>
             <div class="form-group" id="phone-group">
                 <label for="userphone">Ваш номер телефона (для связи):</label>
@@ -186,7 +174,7 @@
             <button class="btn" onclick="handleAuth()">Продолжить</button>
         </div>
 
-        <!-- Пароль для мамы (Ксюша / Админ) -->
+        <!-- Пароль для админки -->
         <div id="password-block" class="card hidden">
             <span class="admin-badge">Режим Administrator</span>
             <h2>Подтверждение доступа</h2>
@@ -197,7 +185,7 @@
             <button class="btn" onclick="checkPassword()">Войти в панель</button>
         </div>
 
-        <!-- Клиентская зона (Карточки товаров) -->
+        <!-- Клиентская зона (Витрина товаров) -->
         <div id="user-block" class="hidden">
             <h2 style="padding-left: 10px;">Доступные расклады:</h2>
             <div id="services-display" class="services-grid"></div>
@@ -216,14 +204,27 @@
                 <label for="new-price">Цена (руб.):</label>
                 <input type="number" id="new-price" placeholder="Например: 1500">
             </div>
+            
             <div class="form-group">
-                <label>Фото карты/товара (выберите с телефона или ПК):</label>
-                <div class="file-upload-wrapper">
-                    <input type="file" id="new-img" accept="image/*" class="file-upload-input">
-                </div>
-                <div id="image-preview" style="margin-top: 15px; text-align: center; display: none;">
-                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Предпросмотр фото:</p>
-                    <img id="preview-img" src="" style="max-height: 150px; border-radius: 8px; border: 1px solid var(--accent-gold);">
+                <label for="quality-select">Желаемое качество картинки:</label>
+                <select id="quality-select">
+                    <option value="0.9">Высокое качество (HQ)</option>
+                    <option value="0.7" selected>Оптимальный баланс (Рекомендуется)</option>
+                    <option value="0.4">Экономичный размер (Быстрая загрузка)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Фото товара (выберите файл с устройства):</label>
+                <input type="file" id="file-input" accept="image/*">
+                
+                <!-- Окно встроенного фоторедактора -->
+                <div id="editor-block" class="editor-wrapper hidden">
+                    <p style="font-size: 13px; color: var(--accent-gold); margin-top: 0;">Перетаскивайте фото в рамке для кадрирования:</p>
+                    <div class="cropper-box-container">
+                        <img id="image-to-crop">
+                    </div>
+                    <button class="btn" id="crop-btn" onclick="applyCrop()" style="background-color: var(--accent-purple); color: white;">Зафиксировать фото</button>
                 </div>
             </div>
 
@@ -238,13 +239,12 @@
     <footer><p>&copy; 2026 Система управления услугами Таро.</p></footer>
 
     <script>
-        // НАСТРОЙКА КЛЮЧЕЙ EMAILJS
+        // ИНИЦИАЛИЗАЦИЯ СЕРВИСОВ
         const EMAILJS_PUBLIC_KEY = "HETR1w83ZKv6-F_Am"; 
         const EMAILJS_SERVICE_ID = "service_dm35mlf";
         const EMAILJS_TEMPLATE_ID = "template_cphyd0a";
         emailjs.init(EMAILJS_PUBLIC_KEY);
 
-        // ТВОЯ КОНФИГУРАЦИЯ FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAb-mn3GFFoSX17Bb1JxZi4AEIVUutAIbI",
             authDomain: "taro-bb716.firebaseapp.com",
@@ -255,30 +255,61 @@
             measurementId: "G-808R7FYF40"
         };
 
-        // Инициализация базы данных
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         let services = [];
         let currentUserName = "";
         let currentUserPhone = "";
+        let cropper = null;
+        let finalBase64Image = ""; // Тут хранится готовая пожатая картинка
 
-        // Показ предпросмотра выбранной картинки
-        document.getElementById('new-img').addEventListener('change', function(e) {
+        // Запуск фоторедактора при выборе файла
+        document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    document.getElementById('preview-img').src = event.target.result;
-                    document.getElementById('image-preview').style.display = 'block';
+                    const imgElement = document.getElementById('image-to-crop');
+                    imgElement.src = event.target.result;
+                    document.getElementById('editor-block').classList.remove('hidden');
+                    
+                    if (cropper) { cropper.destroy(); }
+                    
+                    // Инициализация Cropper.js (пропорции 3:4 — идеальные вертикальные карты)
+                    cropper = new Cropper(imgElement, {
+                        aspectRatio: 3 / 4,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false
+                    });
                 };
                 reader.readAsDataURL(file);
-            } else {
-                document.getElementById('image-preview').style.display = 'none';
             }
         });
 
-        // Автоматическое обновление данных
+        // Фиксация кропа и сжатие картинки
+        function applyCrop() {
+            if (!cropper) return;
+            
+            const qualityValue = parseFloat(document.getElementById('quality-select').value);
+            // Получаем холст с кадрированным фото шириной 450px (оптимально для веса страницы)
+            const canvas = cropper.getCroppedCanvas({ width: 450 });
+            
+            finalBase64Image = canvas.toDataURL('image/jpeg', qualityValue);
+            
+            document.getElementById('editor-block').classList.add('hidden');
+            showAlert("Фото успешно обрезано и подготовлено к отправке!");
+        }
+
+        // Подгрузка базы данных Firestore
         db.collection("services").orderBy("timestamp", "asc").onSnapshot((snapshot) => {
             services = [];
             snapshot.forEach((doc) => {
@@ -288,8 +319,6 @@
             });
             if (!document.getElementById('user-block').classList.contains('hidden')) renderUserServices();
             if (!document.getElementById('admin-block').classList.contains('hidden')) renderAdminServices();
-        }, (error) => {
-            console.error("Ошибка Firestore:", error);
         });
 
         function handleAuth() {
@@ -300,7 +329,6 @@
             currentUserName = nameInput;
 
             const lowerName = currentUserName.toLowerCase();
-            // Поддержка имен: Ксюша, Админ, админ
             if (lowerName === "ксюша" || lowerName === "админ") {
                 document.getElementById('auth-block').classList.add('hidden');
                 document.getElementById('password-block').classList.remove('hidden');
@@ -315,7 +343,6 @@
         }
 
         function checkPassword() {
-            // Новый пароль: 270385
             if (document.getElementById('admin-password').value === "270385") {
                 document.getElementById('password-block').classList.add('hidden');
                 document.getElementById('admin-block').classList.remove('hidden');
@@ -331,7 +358,6 @@
             showInfo("Режим пользователя");
         }
 
-        // РЕНДЕР КАРТОЧЕК ДЛЯ КЛИЕНТА
         function renderUserServices() {
             const display = document.getElementById('services-display');
             display.innerHTML = "";
@@ -344,9 +370,7 @@
             services.forEach(service => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                
                 let bgStyle = service.img ? `background-image: url('${service.img}');` : '';
-                
                 card.innerHTML = `
                     <div class="product-img-block" style="${bgStyle}">
                         ${service.img ? '' : 'Фото не добавлено'}
@@ -363,7 +387,6 @@
             });
         }
 
-        // РЕНДЕР КАРТОЧЕК ДЛЯ МАМЫ (С КНОПКОЙ УДАЛЕНИЯ)
         function renderAdminServices() {
             const display = document.getElementById('admin-services-display');
             display.innerHTML = "";
@@ -393,90 +416,36 @@
             });
         }
 
-        // ДОБАВЛЕНИЕ НОВОЙ УСЛУГИ С ОПТИМИЗАЦИЕЙ ФОТОГРАФИИ
+        // Отправка карточки в Firestore
         function addNewService() {
             const title = document.getElementById('new-title').value.trim();
             const price = parseInt(document.getElementById('new-price').value);
-            const fileInput = document.getElementById('new-img');
             
             if (!title || !price) { alert("Заполните поля Название и Цена!"); return; }
 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
-            submitBtn.textContent = "Загрузка и оптимизация фото...";
+            submitBtn.textContent = "Сохранение товара...";
 
-            const file = fileInput.files[0];
-
-            if (file) {
-                // Если файл выбран, сжимаем его и переводим в Base64
-                resizeAndConvertToBase64(file, function(base64Data) {
-                    saveToFirestore(title, price, base64Data);
-                });
-            } else {
-                // Если файл не выбран, сохраняем товар без фото
-                saveToFirestore(title, price, "");
-            }
-        }
-
-        // Сохранение в Firebase Firestore
-        function saveToFirestore(title, price, imgBase64) {
-            const submitBtn = document.getElementById('submit-btn');
             db.collection("services").add({
                 id: Date.now(),
                 title: title,
                 price: price,
-                img: imgBase64,
+                img: finalBase64Image, // Помещаем сюда нашу кадрированную фотку
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 document.getElementById('new-title').value = "";
                 document.getElementById('new-price').value = "";
-                document.getElementById('new-img').value = "";
-                document.getElementById('image-preview').style.display = 'none';
+                document.getElementById('file-input').value = "";
+                finalBase64Image = "";
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Добавить на сайт";
                 showAlert(`Успешно добавлено в базу данных!`);
             }).catch(err => {
                 submitBtn.disabled = false;
                 submitBtn.textContent = "Добавить на сайт";
-                alert("Ошибка добавления в базу данных: " + err);
+                alert("Ошибка добавления: " + err);
             });
-        }
-
-        // Функция сжатия изображения с помощью Canvas
-        function resizeAndConvertToBase64(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max_size = 500; // Оптимальный размер для мобильных экранов
-                    
-                    if (width > height) {
-                        if (width > max_size) {
-                            height *= max_size / width;
-                            width = max_size;
-                        }
-                    } else {
-                        if (height > max_size) {
-                            width *= max_size / height;
-                            height = max_size;
-                        }
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Сжимаем в формат JPEG с качеством 70% для минимального веса файла
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    callback(dataUrl);
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
         }
 
         function deleteService(docId) {
@@ -487,7 +456,6 @@
             }
         }
 
-        // ОТПРАВКА ЗАЯВКИ С КОНКРЕТНОЙ КАРТОЧКИ
         function sendOrder(productId) {
             const selectedService = services.find(s => s.id === productId);
             if (!selectedService) return;
@@ -516,4 +484,3 @@
     </script>
 </body>
 </html>
-
